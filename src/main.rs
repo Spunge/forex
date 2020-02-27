@@ -1,9 +1,9 @@
 
 extern crate jack;
+extern crate crossbeam_channel;
 
-use std::sync::mpsc::{SyncSender, Receiver};
-use std::sync::mpsc::sync_channel;
-
+use crossbeam_channel::unbounded;
+use crossbeam_channel::{ Receiver, Sender };
 use gilrs::{Gilrs, Button, Event};
 use std::time::SystemTime;
 use std::thread;
@@ -112,7 +112,7 @@ impl Processor {
 
 impl jack::ProcessHandler for Processor {
     fn process(&mut self, _: &jack::Client, _process_scope: &jack::ProcessScope) -> jack::Control {
-        for message in self.rx.iter() {
+        while let Ok(message) = self.rx.try_recv() {
             println!("{:?}", message);
         }
 
@@ -121,7 +121,7 @@ impl jack::ProcessHandler for Processor {
 }
 
 fn main() {
-    let (tx, rx) = sync_channel(64);
+    let (tx, rx) = unbounded();
 
     let mut drums = Drums {
         toms: [Tom::new(0), Tom::new(1), Tom::new(2), Tom::new(3), Tom::new(4), Tom::new(5)],
@@ -136,42 +136,25 @@ fn main() {
 
     let (client, _status) = jack::Client::new("Forex", jack::ClientOptions::NO_START_SERVER).unwrap();
     let output = client.register_port("output", jack::MidiOut::default()).unwrap();
-    let processor = Processor::new(rx, output);
-
     //let processor = Processor::new(rx, output);
-    //let process_callback = move |_: &jack::Client, _process_scope: &jack::ProcessScope| -> jack::Control {
-        //for message in rx.iter() {
-            //println!("{:?}", message);
-        //}
-        //jack::Control::Continue
-    //};
-    //let processor = jack::ClosureProcessHandler::new(process_callback);
 
-    
+    let process_callback = move |_: &jack::Client, _process_scope: &jack::ProcessScope| -> jack::Control {
+        for message in rx.iter() {
+            println!("{:?}", message);
+        }
+        jack::Control::Continue
+    };
+    let processor = jack::ClosureProcessHandler::new(process_callback);
 
     let active_client = client.activate_async((), processor);
 
+    // Examine new events
     loop {
-        // Examine new events
         while let Some(Event { id, event, time }) = gilrs.next_event() {
             if let Some(message) = drums.process_event(event, time) {
                 // TODO - send message into channel here
-                println!("{:?}", message);
                 tx.send(message);
             }
-            /*
-            match event {
-                gilrs::EventType::ButtonPressed(_, code) => {
-                    println!("Hit: {:?}", code);
-                },
-                gilrs::EventType::AxisChanged(_, amount, code) => {
-                    println!("Velocity changed: {:?} to {:?}", code, amount);
-                },
-                _ => {
-                    println!("{:?}",  event);
-                }
-            };
-            */
         }
     }
 }
