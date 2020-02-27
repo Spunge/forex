@@ -5,7 +5,9 @@ extern crate crossbeam_channel;
 use crossbeam_channel::unbounded;
 use crossbeam_channel::{ Receiver, Sender };
 use gilrs::{Gilrs, Button, Event};
+use std::sync::Arc;
 use std::time::SystemTime;
+use std::time::Duration;
 use std::thread;
 
 #[derive(Debug, Copy, Clone)]
@@ -106,12 +108,16 @@ struct Processor {
 
 impl Processor {
     fn new(rx: Receiver<Message>, output: jack::Port<jack::MidiOut>) -> Self {
+
         Self { rx, output }
     }
 }
 
 impl jack::ProcessHandler for Processor {
     fn process(&mut self, _: &jack::Client, _process_scope: &jack::ProcessScope) -> jack::Control {
+        //for message in self.rx.iter() {
+            //println!("{:?}", message);
+        //}
         while let Ok(message) = self.rx.try_recv() {
             println!("{:?}", message);
         }
@@ -127,8 +133,8 @@ fn main() {
         toms: [Tom::new(0), Tom::new(1), Tom::new(2), Tom::new(3), Tom::new(4), Tom::new(5)],
     };
 
-    let mut gilrs = Gilrs::new().unwrap();
-
+    let gilrs = &mut Gilrs::new().unwrap();
+    
     // Iterate over all connected gamepads
     for (_id, gamepad) in gilrs.gamepads() {
         println!("{} is {:?}", gamepad.name(), gamepad.power_info());
@@ -148,7 +154,6 @@ fn main() {
 
     let active_client = client.activate_async((), processor);
 
-    // Examine new events
     loop {
         while let Some(Event { id, event, time }) = gilrs.next_event() {
             if let Some(message) = drums.process_event(event, time) {
@@ -157,5 +162,7 @@ fn main() {
             }
         }
     }
+
+    // Examine new events
 }
 
