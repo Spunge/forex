@@ -4,11 +4,12 @@ extern crate crossbeam_channel;
 
 use crossbeam_channel::unbounded;
 use crossbeam_channel::{ Receiver, Sender };
+use std::sync::{Arc, Mutex};
 use gilrs::{Gilrs, Button, Event};
-use std::sync::Arc;
 use std::time::SystemTime;
 use std::time::Duration;
 use std::thread;
+use std::io;
 
 #[derive(Debug, Copy, Clone)]
 struct Message {
@@ -101,15 +102,17 @@ impl Drums {
     }
 }
 
+/*
 struct Processor {
-    rx: Receiver<Message>,
+    //rx: Receiver<Message>,
+    //gilrs: Arc<Mutex<Gilrs>>,
     output: jack::Port<jack::MidiOut>,
 }
 
 impl Processor {
-    fn new(rx: Receiver<Message>, output: jack::Port<jack::MidiOut>) -> Self {
+    fn new(gilrs: Arc<Mutex<Gilrs>>, output: jack::Port<jack::MidiOut>) -> Self {
 
-        Self { rx, output }
+        Self { gilrs, output }
     }
 }
 
@@ -125,35 +128,54 @@ impl jack::ProcessHandler for Processor {
         jack::Control::Continue
     }
 }
+*/
 
 fn main() {
-    let (tx, rx) = unbounded();
+    //let (tx, rx) = unbounded();
 
     let mut drums = Drums {
         toms: [Tom::new(0), Tom::new(1), Tom::new(2), Tom::new(3), Tom::new(4), Tom::new(5)],
     };
 
-    let gilrs = &mut Gilrs::new().unwrap();
     
     // Iterate over all connected gamepads
-    for (_id, gamepad) in gilrs.gamepads() {
-        println!("{} is {:?}", gamepad.name(), gamepad.power_info());
-    }
+    //for (_id, gamepad) in gilrs.lock().unwrap().gamepads() {
+        //println!("{} is {:?}", gamepad.name(), gamepad.power_info());
+    //}
+
+    let mut gilrs = Gilrs::new().unwrap();
 
     let (client, _status) = jack::Client::new("Forex", jack::ClientOptions::NO_START_SERVER).unwrap();
     let output = client.register_port("output", jack::MidiOut::default()).unwrap();
-    //let processor = Processor::new(rx, output);
+    //let processor = Processor::new(gilrs, output);
 
     let process_callback = move |_: &jack::Client, _process_scope: &jack::ProcessScope| -> jack::Control {
-        for message in rx.iter() {
-            println!("{:?}", message);
+        /*
+        while let Some(Event { id, event, time }) = gilrs.next_event() {
+            if let Some(message) = drums.process_event(event, time) {
+                // TODO - send message into channel here
+                println!("{:?}", message);
+                //tx.send(message);
+            }
         }
+        */
+
+        //for message in rx.iter() {
+            //println!("{:?}", message);
+        //}
         jack::Control::Continue
     };
     let processor = jack::ClosureProcessHandler::new(process_callback);
 
     let active_client = client.activate_async((), processor);
 
+
+    // Wait for user to input string
+    let mut user_input = String::new();
+    io::stdin().read_line(&mut user_input).ok();
+    
+
+    /*
     loop {
         while let Some(Event { id, event, time }) = gilrs.next_event() {
             if let Some(message) = drums.process_event(event, time) {
@@ -162,6 +184,7 @@ fn main() {
             }
         }
     }
+    */
 
     // Examine new events
 }
