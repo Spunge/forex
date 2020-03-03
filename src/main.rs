@@ -1,14 +1,15 @@
 
+//extern crate udev;
 extern crate jack;
-extern crate crossbeam_channel;
+//extern crate crossbeam_channel;
 
-use crossbeam_channel::unbounded;
-use crossbeam_channel::{ Receiver, Sender };
+//use crossbeam_channel::unbounded;
+//use crossbeam_channel::{ Receiver, Sender };
 use std::sync::{Arc, Mutex};
-use gilrs::{Gilrs, Button, Event};
+use gilrs::{Gilrs, Event};
 use std::time::SystemTime;
-use std::time::Duration;
-use std::thread;
+//use std::time::Duration;
+//use std::thread;
 use std::io;
 
 #[derive(Debug, Copy, Clone)]
@@ -143,22 +144,20 @@ fn main() {
         //println!("{} is {:?}", gamepad.name(), gamepad.power_info());
     //}
 
-    let mut gilrs = Gilrs::new().unwrap();
+    let mut gilrs = Arc::new(Mutex::new(Gilrs::new().unwrap()));
 
     let (client, _status) = jack::Client::new("Forex", jack::ClientOptions::NO_START_SERVER).unwrap();
     let output = client.register_port("output", jack::MidiOut::default()).unwrap();
     //let processor = Processor::new(gilrs, output);
 
     let process_callback = move |_: &jack::Client, _process_scope: &jack::ProcessScope| -> jack::Control {
-        /*
-        while let Some(Event { id, event, time }) = gilrs.next_event() {
+        while let Some(Event { id, event, time }) = gilrs.lock().unwrap().next_event() {
             if let Some(message) = drums.process_event(event, time) {
                 // TODO - send message into channel here
                 println!("{:?}", message);
                 //tx.send(message);
             }
         }
-        */
 
         //for message in rx.iter() {
             //println!("{:?}", message);
