@@ -6,6 +6,9 @@ use gilrs::{Gilrs, Event};
 use std::time::SystemTime;
 use std::io;
 
+/*
+ * Midi message representation
+ */
 #[derive(Debug, Copy, Clone)]
 struct Message {
     time: SystemTime,
@@ -20,11 +23,15 @@ impl Message {
             time,
             note: tom_id as u8 + 36,
             channel,
-            velocity: (velocity * 128.0) as u8 / 2,
+            // Turn -0.1259 & 0.827 to 0 ... 127
+            velocity: ((1.0 - velocity.abs()) * 127.0) as u8,
         }
     }
 }
 
+/*
+ * Tom will keep track of hits
+ */
 #[derive(Debug)]
 struct Tom {
     id: u32,
@@ -37,10 +44,9 @@ impl Tom {
         Self { id, hit: None, velocity: None }
     }
 
+    // Remember if we're hit (so we can output next velocity event)
     fn hit(&mut self, time: SystemTime) {
         self.hit = Some(time);
-        //println!("tom {:?} hit! at {:?}", self.id, time);
-        //self.hit = Some(time);
     }
     fn release(&mut self, time: SystemTime) -> Option<Message> {
         if let Some(velocity) = self.velocity {
@@ -52,11 +58,9 @@ impl Tom {
     }
     fn record_velocity(&mut self, velocity: f32, time: SystemTime) -> Option<Message> {
         self.velocity = Some(velocity);
-        //println!("tom {:?} velocity changed to {:?} at {:?}!", self.id, velocity, time);
 
-        // Should we output hit event?
-        if let Some(time_of_hit) = self.hit {
-            println!("{:?}", time.duration_since(time_of_hit).unwrap().as_micros());
+        // If we were hit, output note on message
+        if let Some(_time_of_hit) = self.hit {
             self.hit = None;
             // 0x90 = note on on channel 1; 0x91 is note on on channel 2
             Some(Message::new(time, 0x90, self.id, velocity))
@@ -66,6 +70,9 @@ impl Tom {
     }
 }
 
+/*
+ * Drum will hold toms
+ */
 struct Drums {
     toms: [Tom; 6],
 }
@@ -129,17 +136,19 @@ unsafe impl Sync for Processor {}
 impl jack::ProcessHandler for Processor {
     fn process(&mut self, _: &jack::Client, process_scope: &jack::ProcessScope) -> jack::Control {
 
-        //println!("{:?}", process_scope.cycle_times());
+        let mut writer = self.output.writer(process_scope);
 
         while let Some(Event { id: _, event, time }) = self.gilrs.lock().unwrap().next_event() {
             if let Some(message) = self.drums.process_event(event, time) {
-                let event_usecs = SystemTime::now().duration_since(message.time).unwrap().as_micros();
+                // Get some information about our current cycle & message
+                let message_usecs_ago = SystemTime::now().duration_since(message.time).unwrap().as_micros();
                 let period_usecs = process_scope.cycle_times().unwrap().period_usecs;
-                if event_usecs >= period_usecs as u128 {
-                    println!("{:?} {:?}", event_usecs, period_usecs);
-                }
-                // TODO - send message into channel here
-                //println!("{:?}", message);
+
+                // Calculate when message occurred, send out midi
+                let message_frames_ago = ((message_usecs_ago as f32 / period_usecs as f32) * process_scope.n_frames() as f32) as u32;
+                let message_frame = process_scope.n_frames() - message_frames_ago;
+
+                writer.write(&jack::RawMidi { time: message_frame, bytes: &[ message.channel, message.note, message.velocity ] }).unwrap();
             }
         }
 
@@ -148,15 +157,13 @@ impl jack::ProcessHandler for Processor {
 }
 
 fn main() {
-
     let (client, _status) = jack::Client::new("Forex", jack::ClientOptions::NO_START_SERVER).unwrap();
 
+    // Add processhandler & start client
     let processor = Processor::new(&client);
-
     let _active_client = client.activate_async((), processor);
 
-
-    // Wait for user to input string
+    // Wait for user to input string (to not exit)
     let mut user_input = String::new();
     io::stdin().read_line(&mut user_input).ok();
 }

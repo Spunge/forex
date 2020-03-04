@@ -8,6 +8,4 @@ edition = "2018"
 
 [dependencies]
 gilrs = "0.7.4"
-#udev = "0.3.0"
 jack = "0.6"
-#crossbeam-channel = "0.4.2"
