@@ -105,7 +105,11 @@ impl Drums {
     }
 }
 
+/*
+ * This is our jack process handler
+ */
 struct Processor {
+    // Gilrs contains a raw pointer to a udev_monitor, wrap it for thread safety
     gilrs: Arc<Mutex<Gilrs>>,
     drums: Drums,
     output: jack::Port<jack::MidiOut>,
@@ -130,6 +134,7 @@ impl Processor {
     }
 }
 
+// As we totally really did wrap all our thread unsafe stuff in processor, mark it as thread safe
 unsafe impl Send for Processor {}
 unsafe impl Sync for Processor {}
 
@@ -148,7 +153,8 @@ impl jack::ProcessHandler for Processor {
                 let message_frames_ago = ((message_usecs_ago as f32 / period_usecs as f32) * process_scope.n_frames() as f32) as u32;
                 let message_frame = process_scope.n_frames() - message_frames_ago;
 
-                writer.write(&jack::RawMidi { time: message_frame, bytes: &[ message.channel, message.note, message.velocity ] }).unwrap();
+                // TODO - System time can go all over the place, so this can fail..
+                writer.write(&jack::RawMidi { time: message_frame, bytes: &[ message.channel, message.note, message.velocity ] });
             }
         }
 
