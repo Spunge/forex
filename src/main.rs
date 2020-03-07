@@ -129,6 +129,18 @@ impl jack::ProcessHandler for Processor {
                 let hit_frames_ago = ((hit_usecs_ago as f32 / cycle_times.period_usecs as f32) * process_scope.n_frames() as f32) as u32;
                 let hit_frame = process_scope.n_frames() - hit_frames_ago;
 
+                // Check cache for note_offs of same tom, remove & play them before new note_on
+                self.cache.retain(|(_, old_hit)| {
+                    let is_same_tom = hit.tom_id == old_hit.tom_id;
+
+                    if is_same_tom {
+                        // Output note on message
+                        output.push((hit_frame, old_hit.to_midi_bytes(0x80)));
+                    }
+
+                    ! is_same_tom
+                });
+
                 // Output note on message
                 output.push((hit_frame, hit.to_midi_bytes(0x90)));
 
