@@ -54,7 +54,7 @@ name = "forex"
 version = "0.1.0"
 dependencies = [
  "gilrs 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "jack 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jack 0.6.0-rc1 (git+https://github.com/spunge/rust-jack.git)",
 ]
 
 [[package]]
@@ -104,11 +104,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "jack"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+version = "0.6.0-rc1"
+source = "git+https://github.com/spunge/rust-jack.git#c645e0b1dbbfb7f901dfb6830bda42519f471389"
 dependencies = [
  "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "jack-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jack-sys 0.2.0 (git+https://github.com/spunge/rust-jack.git)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.67 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -116,7 +116,7 @@ dependencies = [
 [[package]]
 name = "jack-sys"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/spunge/rust-jack.git#c645e0b1dbbfb7f901dfb6830bda42519f471389"
 dependencies = [
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.67 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -445,8 +445,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum gilrs-core 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "6bdd4ea2d919ecb594362fa26b0f172729b9ee9b95e407fbad95e0a49cadc143"
 "checksum io-kit-sys 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f21dcc74995dd4cd090b147e79789f8d65959cbfb5f0b118002db869ea3bd0a0"
 "checksum itoa 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
-"checksum jack 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "385739905427d1bdb561fa018a0a8e26fc023b7eeb975a1a0150512ff828f736"
-"checksum jack-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c0d4ca501477fd3cd93a36df581046e5d6338ed826cf7e9b8d302603521e6cc3"
+"checksum jack 0.6.0-rc1 (git+https://github.com/spunge/rust-jack.git)" = "<none>"
+"checksum jack-sys 0.2.0 (git+https://github.com/spunge/rust-jack.git)" = "<none>"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 "checksum libc 0.2.67 (registry+https://github.com/rust-lang/crates.io-index)" = "eb147597cdf94ed43ab7a9038716637d2d1bf2bc571da995d0028dec06bd3018"
